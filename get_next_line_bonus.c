@@ -26,7 +26,7 @@ int	find_newline(char *buffer)
 	return (-1);
 }
 
-char	*append_to_buffer(char *buffer, char *line, ssize_t bytes_read)
+char	*append_to_buffer(char *buffer, char *temp, ssize_t bytes_read)
 {
 	char	*new_buffer;
 	size_t	buffer_len;
@@ -42,7 +42,7 @@ char	*append_to_buffer(char *buffer, char *line, ssize_t bytes_read)
 		ft_strcpy(new_buffer, buffer);
 		free(buffer);
 	}
-	ft_strcpy(new_buffer + buffer_len, line);
+	ft_strcpy(new_buffer + buffer_len, temp);
 	return (new_buffer);
 }
 
@@ -73,39 +73,41 @@ char	*get_line(char **buffer, int newline_index)
 	return (line);
 }
 
-char	*handle_eof(char **buffer)
+char	*handle_eof(char **buffer, char *temp)
 {
 	char	*line;
 
 	line = *buffer;
 	*buffer = NULL;
+	free(temp);
 	return (line);
 }
 
 char	*get_next_line(int fd)
 {
 	static char	*buffer;
+	char		*temp;
 	char		*line;
 	ssize_t		bytes_read;
 
 	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, NULL, 0) < 0)
 		return (NULL);
+	temp = malloc(sizeof(char) * BUFFER_SIZE + 1);
+	if (temp == NULL)
+		return (NULL);
 	while (find_newline(buffer) == -1)
 	{
-		line = malloc(sizeof(char) * BUFFER_SIZE + 1);
-		if (line == NULL)
-			return (NULL);
-		bytes_read = read(fd, line, BUFFER_SIZE);
+		bytes_read = read(fd, temp, BUFFER_SIZE);
 		if (bytes_read == -1 && buffer == NULL)
-			return (free(line), NULL);
+			return (NULL);
 		else if (bytes_read == 0)
-			return (free(line), handle_eof(&buffer));
-		line[bytes_read] = '\0';
-		buffer = append_to_buffer(buffer, line, bytes_read);
-		free(line);
+			return (handle_eof(&buffer, temp));
+		temp[bytes_read] = '\0';
+		buffer = append_to_buffer(buffer, temp, bytes_read);
 		if (buffer == NULL)
 			return (NULL);
 	}
 	line = get_line(&buffer, find_newline(buffer));
+	free(temp);
 	return (line);
 }
