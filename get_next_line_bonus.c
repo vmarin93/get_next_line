@@ -85,7 +85,7 @@ char	*handle_eof(char **buffer, char *temp)
 
 char	*get_next_line(int fd)
 {
-	static char	*buffer;
+	static char	*buffer[1024];
 	char		*temp;
 	char		*line;
 	ssize_t		bytes_read;
@@ -95,19 +95,19 @@ char	*get_next_line(int fd)
 	temp = malloc(sizeof(char) * BUFFER_SIZE + 1);
 	if (temp == NULL)
 		return (NULL);
-	while (find_newline(buffer) == -1)
+	while (find_newline(buffer[fd]) == -1)
 	{
 		bytes_read = read(fd, temp, BUFFER_SIZE);
-		if (bytes_read == -1 && buffer == NULL)
+		if (bytes_read == -1 && buffer[fd] == NULL)
 			return (NULL);
 		else if (bytes_read == 0)
-			return (handle_eof(&buffer, temp));
+			return (handle_eof(&buffer[fd], temp));
 		temp[bytes_read] = '\0';
-		buffer = append_to_buffer(buffer, temp, bytes_read);
-		if (buffer == NULL)
+		buffer[fd] = append_to_buffer(buffer[fd], temp, bytes_read);
+		if (buffer[fd] == NULL)
 			return (NULL);
 	}
-	line = get_line(&buffer, find_newline(buffer));
+	line = get_line(&buffer[fd], find_newline(buffer[fd]));
 	free(temp);
 	return (line);
 }
