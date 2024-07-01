@@ -6,7 +6,7 @@
 /*   By: vmarin <vmarin@student.42london.com>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/09 20:35:13 by vmarin            #+#    #+#             */
-/*   Updated: 2024/07/01 17:39:35 by vmarin           ###   ########.fr       */
+/*   Updated: 2024/07/01 18:02:24 by vmarin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ int	find_newline(char *buffer)
 	return (-1);
 }
 
-char	*append_to_buffer(char *buffer, char *temp, ssize_t bytes_read)
+char	*append_to_buffer(char *buffer, char *line, ssize_t bytes_read)
 {
 	char	*new_buffer;
 	size_t	buffer_len;
@@ -42,7 +42,7 @@ char	*append_to_buffer(char *buffer, char *temp, ssize_t bytes_read)
 		ft_strcpy(new_buffer, buffer);
 		free(buffer);
 	}
-	ft_strcpy(new_buffer + buffer_len, temp);
+	ft_strcpy(new_buffer + buffer_len, line);
 	return (new_buffer);
 }
 
@@ -73,41 +73,39 @@ char	*get_line(char **buffer, int newline_index)
 	return (line);
 }
 
-char	*handle_eof(char **buffer, char *temp)
+char	*handle_eof(char **buffer)
 {
 	char	*line;
 
 	line = *buffer;
 	*buffer = NULL;
-	free(temp);
 	return (line);
 }
 
 char	*get_next_line(int fd)
 {
 	static char	*buffer[1024];
-	char		*temp;
 	char		*line;
 	ssize_t		bytes_read;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-	temp = malloc(sizeof(char) * BUFFER_SIZE + 1);
-	if (temp == NULL)
-		return (NULL);
 	while (find_newline(buffer[fd]) == -1)
 	{
-		bytes_read = read(fd, temp, BUFFER_SIZE);
-		if (bytes_read == -1 && buffer[fd] == NULL)
+		line = malloc(sizeof(char) * BUFFER_SIZE + 1);
+		if (line == NULL)
 			return (NULL);
+		bytes_read = read(fd, line, BUFFER_SIZE);
+		if (bytes_read == -1 && buffer[fd] == NULL)
+			return (free(line), NULL);
 		else if (bytes_read == 0)
-			return (handle_eof(&buffer[fd], temp));
-		temp[bytes_read] = '\0';
-		buffer[fd] = append_to_buffer(buffer[fd], temp, bytes_read);
+			return (free(line), handle_eof(&buffer[fd]));
+		line[bytes_read] = '\0';
+		buffer[fd] = append_to_buffer(buffer[fd], line, bytes_read);
+		free(line);
 		if (buffer[fd] == NULL)
 			return (NULL);
 	}
 	line = get_line(&buffer[fd], find_newline(buffer[fd]));
-	free(temp);
 	return (line);
 }
